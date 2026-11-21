@@ -1,0 +1,28 @@
+services:
+  maildoctor:
+    image: ghcr.io/CHANGE_ME/maildoctor:latest
+    container_name: maildoctor
+    restart: unless-stopped
+
+    # 只绑回环：由 Caddy 反代出去，8787 本身不开公网
+    ports:
+      - "127.0.0.1:8787:8787"
+
+    environment:
+      TZ: Asia/Shanghai
+
+    # 程序不写任何持久化数据，--public 模式下只用到临时文件
+    read_only: true
+    tmpfs:
+      - /tmp:size=32m
+
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"

@@ -1,0 +1,9 @@
+# 全仓库统一 LF：Dockerfile 的多行续行、shell 片段和 Python 都要求行尾不能带 \r
+* text=auto eol=lf
+
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.woff2 binary

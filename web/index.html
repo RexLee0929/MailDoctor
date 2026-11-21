@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>MailDoctor · 自建邮箱配置体检</title>
+<link rel="stylesheet" href="style.css">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><text y='19' font-size='19'>✉️</text></svg>">
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="logo">
+      <svg viewBox="0 0 24 24" fill="none" stroke="#2f6bff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="2" y="4" width="20" height="16" rx="2.5"/>
+        <path d="M2.5 7l9.5 6.5L21.5 7"/>
+      </svg>
+      MailDoctor
+    </div>
+    <div class="tagline">自建邮箱 · DNS 与自动配置体检</div>
+    <button class="about-btn" id="aboutBtn" type="button">关于</button>
+  </header>
+
+  <section class="panel form">
+    <div class="form-main">
+      <div class="field">
+        <input id="domain" placeholder="example.com" autocomplete="off" spellcheck="false">
+      </div>
+      <button class="btn" id="go">开始检查</button>
+    </div>
+
+    <div class="advanced-toggle" id="advToggle">
+      <span id="advCaret">▸</span> 更多选项 · 邮件主机 / DKIM selector / 账号实测
+    </div>
+
+    <div class="advanced" id="adv">
+      <div class="adv-grid">
+        <div class="adv-item">
+          <label>邮件主机</label>
+          <input id="mailhost" placeholder="留空则自动用 mail.域名" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="adv-item">
+          <label>DKIM selector</label>
+          <input id="dkim" placeholder="Poste.io 后台可查，随机生成" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="adv-item">
+          <label>测试账号（可选）</label>
+          <input id="email" placeholder="you@example.com" autocomplete="off" spellcheck="false">
+        </div>
+        <div class="adv-item">
+          <label>密码（可选）</label>
+          <input id="password" type="password" placeholder="仅用于本次登录验证" autocomplete="off">
+        </div>
+        <div class="adv-note">
+          填写账号密码会真实登录一次 IMAP / SMTP 来验证凭据，只做认证与读取收件箱，<b>不会发送任何邮件</b>，密码不会落盘。
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div id="result"></div>
+</div>
+
+<div class="modal" id="aboutModal" hidden>
+  <div class="modal-card" role="dialog" aria-modal="true" aria-labelledby="aboutTitle">
+    <div class="about-body" id="aboutBody"></div>
+
+    <div class="about-contact">
+      <span class="about-author">作者　<span id="aboutAuthor">Rex Lee</span></span>
+      <button class="mail-pill" id="mailPill" type="button" title="点击复制邮箱">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+             stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <rect x="2" y="4" width="20" height="16" rx="2.5"/>
+          <path d="M2.5 7l9.5 6.5L21.5 7"/>
+        </svg>
+        <span id="mailText"></span>
+      </button>
+      <span class="copy-hint" id="copyHint"></span>
+    </div>
+
+    <div class="about-actions">
+      <button class="btn" id="aboutClose" type="button">关闭</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>
