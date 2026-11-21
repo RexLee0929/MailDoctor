@@ -4,14 +4,32 @@ services:
     container_name: maildoctor
     restart: unless-stopped
 
-    # 只绑回环：由 Caddy 反代出去，8787 本身不开公网
+    # 8787 只存在于容器内；宿主机只暴露 8006，且绑回环，由 Caddy 反代出去
     ports:
-      - "127.0.0.1:8787:8787"
+      - "127.0.0.1:8006:8787"
+
+    # --log-file 让程序自己写日志到 /app/logs。
+    # Docker 的 json-file driver 由守护进程写 /var/lib/docker，compose 无法把它映射到宿主机目录。
+    command:
+      - python
+      - run.py
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8787"
+      - --public
+      - --log-file
+      - /app/logs/maildoctor.log
 
     environment:
       TZ: Asia/Shanghai
+      PYTHONUNBUFFERED: "1"
 
-    # 程序不写任何持久化数据，--public 模式下只用到临时文件
+    volumes:
+      # 宿主机目录要先 chown 10001:10001（容器内以该 uid 运行，非 root 写不进去）
+      - ./logs:/app/logs
+
+    # 根文件系统只读；/tmp 给 netutil 的 PEM 临时文件，/app/logs 由上面的挂载点提供写权限
     read_only: true
     tmpfs:
       - /tmp:size=32m
@@ -21,8 +39,24 @@ services:
     cap_drop:
       - ALL
 
+    # 应用已自己落盘，这里只留一份兜底的容器日志，不重复占空间
     logging:
       driver: json-file
       options:
-        max-size: "10m"
-        max-file: "3"
+        max-size: "5m"
+        max-file: "2"
+
+    networks:
+      - maildoctor
+
+networks:
+  maildoctor:
+    driver: bridge
+    enable_ipv6: true
+    driver_opts:
+      # 固定网桥名（13 字符，Linux 接口名上限 15），nftables 想按接口名放行时不用猜 br-<随机串>
+      com.docker.network.bridge.name: br-maildoctor
+    ipam:
+      config:
+        - subnet: 172.26.0.0/16
+        - subnet: fd00:dead:beef::/48

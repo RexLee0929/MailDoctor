@@ -25,6 +25,62 @@ except Exception:  # noqa: BLE001
 ICON = {"pass": "✓", "warn": "!", "fail": "✗", "info": "i", "skip": "-"}
 
 
+class Tee:
+    """stdout 同时写控制台和文件。
+
+    Docker 的 json-file 驱动由守护进程持有，没法映射到宿主机目录；
+    要在 ./logs 里看到日志，只能由程序自己落盘。默认不启用，行为不变。
+    超过 max_bytes 时把当前文件改名成 .1（只留一份），避免无限增长。
+    """
+
+    def __init__(self, stream, path: str, max_bytes: int = 10 * 1024 * 1024):
+        self._stream = stream
+        self._path = path
+        self._max = max_bytes
+        folder = os.path.dirname(os.path.abspath(path))
+        if folder:
+            os.makedirs(folder, exist_ok=True)
+        self._fh = open(path, "a", encoding="utf-8", buffering=1)
+
+    def _rotate_if_needed(self) -> None:
+        try:
+            if os.path.getsize(self._path) <= self._max:
+                return
+            self._fh.close()
+            os.replace(self._path, self._path + ".1")
+            self._fh = open(self._path, "a", encoding="utf-8", buffering=1)
+        except OSError:
+            pass
+
+    def write(self, data: str) -> int:
+        self._stream.write(data)
+        try:
+            self._rotate_if_needed()
+            self._fh.write(data)
+        except OSError:
+            pass
+        return len(data)
+
+    def flush(self) -> None:
+        self._stream.flush()
+        try:
+            self._fh.flush()
+        except OSError:
+            pass
+
+    def isatty(self) -> bool:
+        return False
+
+    def close(self) -> None:
+        try:
+            self._fh.close()
+        except OSError:
+            pass
+
+    def __getattr__(self, name):          # encoding / reconfigure 等一律代理给真实流
+        return getattr(self._stream, name)
+
+
 def run_cli(domain: str, mail_host: str, dkim: str, email: str, password: str) -> int:
     from maildoctor.model import GROUPS, Target
     from maildoctor.scan import run_scan
@@ -83,7 +139,14 @@ def main() -> int:
     ap.add_argument("--dkim", default="", help="DKIM selector")
     ap.add_argument("--email", default="", help="用于登录实测的邮箱地址")
     ap.add_argument("--password", default="", help="配合 --email 使用")
+    ap.add_argument("--log-file", default="",
+                    help="同时把输出写入该文件（容器部署用，超过 10MB 轮转一份）")
     args = ap.parse_args()
+
+    if args.log_file:
+        tee = Tee(sys.stdout, args.log_file)
+        sys.stdout = tee
+        sys.stderr = tee
 
     if args.cli:
         return run_cli(args.cli, args.mail_host, args.dkim, args.email, args.password)

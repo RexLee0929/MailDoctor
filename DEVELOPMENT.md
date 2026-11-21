@@ -79,6 +79,10 @@ GitHub Actions 在 push 到 `main`、打 `v*` tag 或手动触发时构建并推
 
 `docker-compose.yml` 里 `read_only: true` 必须配 `tmpfs: /tmp`：`netutil.py` 用 `tempfile.mkstemp()` 写 PEM 临时文件，根文件系统只读会直接崩。
 
+日志落在 `./logs` 这件事，只靠 compose 做不到：`logging.driver: json-file` 由 Docker 守护进程写 `/var/lib/docker/containers/<id>/`，compose 没有任何字段能把它映射到宿主机目录。所以 `run.py` 提供 `--log-file`，容器里启用后写到 `/app/logs/maildoctor.log`，compose 挂 `./logs:/app/logs` 即可在宿主机看到。默认不启用，本地跑不加这个参数，行为不变。
+
+宿主机目录要先 `chown 10001:10001 ./logs`——容器以非 root 运行，`read_only: true` 不限制挂载点，但目录属主不对照样写不进去。日志超过 10MB 时程序会把它改名成 `.log.1`，只留一份，不会无限增长。
+
 ## 验证
 
 项目没有自动化测试目录。改动后至少手工过一遍：
