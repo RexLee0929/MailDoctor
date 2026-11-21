@@ -390,6 +390,15 @@ if (window.__MD_MOCK__) {
 /* ---------- 关于 ---------- */
 let aboutData = null;
 
+// 标题栏带上版本号：常驻版本只出现在标题栏和「关于」，版本号唯一来源是后端 __version__
+fetch('/api/about')
+  .then((r) => r.json())
+  .then((d) => {
+    aboutData = d;
+    if (d.version) document.title = (d.name || 'MailDoctor') + ' ' + d.version + ' · 自建邮箱配置体检';
+  })
+  .catch(() => { /* 拿不到就保持静态标题 */ });
+
 function mdInline(s) {
   return esc(s).replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
 }
