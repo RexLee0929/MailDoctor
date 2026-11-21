@@ -15,10 +15,11 @@
 - `docker-compose.yml` 宿主机端口从 `8787` 改为 `8006`（容器内仍监听 8787）
 - 自定义网桥改为显式声明：固定桥名 `br-maildoctor`、固定子网 `172.26.0.0/16` 与 `fd00:dead:beef::/48`，nftables 想按接口名或网段放行时不用猜随机名
 - 容器日志改为挂载 `./logs` 由程序自己落盘，容器自身的 json-file 日志只做兜底，轮转从 `10m × 3` 收紧为 `5m × 2`
-- 宿主机 `./logs` 需要先 `chown 10001:10001`：容器以非 root（uid 10001）运行
+- **部署前必须先** `mkdir -p logs && chown -R 10001:10001 logs`：容器以非 root（uid 10001）运行，目录属主不对就写不进日志
 
 ### 修复
 
+- `--log-file` 指定的文件无法写入时（容器以 `uid 10001` 运行、宿主机挂载目录属主仍是 root，`PermissionError: [Errno 13]`）不再抛异常退出，改为打印一行警告并退化为只写控制台，服务照常启动
 - `docker-compose.yml` 的 `TZ` 原先写成列表形式，Compose v2 会忽略，现改为标准键值对
 - 删除无效的 `com.docker.network.enable_ipv6` 驱动选项（该选项仅对内置 bridge 生效，自定义网络下不生效），IPv6 改由网络定义里的 `enable_ipv6: true` 开启
 

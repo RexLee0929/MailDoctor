@@ -37,10 +37,19 @@ class Tee:
         self._stream = stream
         self._path = path
         self._max = max_bytes
-        folder = os.path.dirname(os.path.abspath(path))
-        if folder:
-            os.makedirs(folder, exist_ok=True)
-        self._fh = open(path, "a", encoding="utf-8", buffering=1)
+        self._fh = None
+        try:
+            folder = os.path.dirname(os.path.abspath(path))
+            if folder:
+                os.makedirs(folder, exist_ok=True)
+            self._fh = open(path, "a", encoding="utf-8", buffering=1)
+        except OSError as e:
+            # 日志写不进去不该让服务起不来：容器以非 root 运行时，宿主机挂上来的目录
+            # 往往还是 root 所有（PermissionError: [Errno 13]）。退化为只写控制台。
+            stream.write(
+                f"警告：日志文件 {path} 无法写入（{e}），本次只输出到控制台。\n"
+                f"      容器部署请先在宿主机执行 chown -R 10001:10001 <日志目录>。\n"
+            )
 
     def _rotate_if_needed(self) -> None:
         try:
@@ -54,6 +63,8 @@ class Tee:
 
     def write(self, data: str) -> int:
         self._stream.write(data)
+        if self._fh is None:
+            return len(data)
         try:
             self._rotate_if_needed()
             self._fh.write(data)
@@ -63,6 +74,8 @@ class Tee:
 
     def flush(self) -> None:
         self._stream.flush()
+        if self._fh is None:
+            return
         try:
             self._fh.flush()
         except OSError:
@@ -72,6 +85,8 @@ class Tee:
         return False
 
     def close(self) -> None:
+        if self._fh is None:
+            return
         try:
             self._fh.close()
         except OSError:

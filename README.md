@@ -146,11 +146,13 @@ docker run -d --name maildoctor \
 或者用仓库里的 `docker-compose.yml`，它已经填好镜像名，并配了只绑回环、只读根文件系统、丢掉全部 capability、`/tmp` 挂 tmpfs 和日志轮转。宿主机端口是 **8006**（容器内仍是 8787），日志由程序自己写到挂载出来的 `./logs`：
 
 ```bash
-mkdir -p logs && sudo chown 10001:10001 logs   # 容器以非 root（uid 10001）运行
+mkdir -p logs && chown -R 10001:10001 logs    # 必须：容器以 uid 10001 运行，属主不对就没有日志
 docker compose up -d
 docker compose logs -f      # 启动阶段的容器日志
 tail -f logs/maildoctor.log # 程序日志，超过 10 MB 轮转一份
 ```
+
+日志文件不可写时程序不会退出，只打印警告并退化为只写控制台——但那样宿主机上就看不到日志了，所以 `chown` 这步别省。
 
 镜像基于 `python:3.13-alpine`，只构建 `linux/amd64`，运行时不带 pip 和 setuptools。确实需要改代码时再本地构建：
 
