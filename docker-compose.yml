@@ -1,6 +1,6 @@
 services:
   maildoctor:
-    image: ghcr.io/CHANGE_ME/maildoctor:latest
+    image: ghcr.io/rexlee0929/maildoctor:latest
     container_name: maildoctor
     restart: unless-stopped
 

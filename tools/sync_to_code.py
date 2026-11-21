@@ -49,6 +49,8 @@ SOURCE_FILES = [
     "DEVELOPMENT.md",
     "ABOUT.md",
     "LICENSE",
+    "run.py",
+    "start.cmd",
     ".gitignore",
     ".gitattributes",
     "Dockerfile",

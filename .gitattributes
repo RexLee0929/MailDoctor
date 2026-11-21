@@ -7,3 +7,7 @@
 *.gif binary
 *.ico binary
 *.woff2 binary
+
+# 批处理必须 CRLF：cmd.exe 对 LF 的括号块与 goto/label 解析会出错（start.cmd 依赖这两样）
+*.cmd text eol=crlf
+*.bat text eol=crlf

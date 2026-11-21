@@ -10,3 +10,5 @@ Dockerfile
 .dockerignore
 *.md
 *.log
+# 例外：镜像内「关于」的文案源，必须进构建上下文
+!ABOUT.md

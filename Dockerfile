@@ -12,6 +12,9 @@ COPY run.py ./
 COPY maildoctor/ ./maildoctor/
 COPY web/ ./web/
 
+# /api/about 的文案源，缺了会退回 server.py 里的内置简短版本
+COPY ABOUT.md ./
+
 # 运行时用不到 pip / setuptools，删掉可省约 12MB
 RUN rm -rf /usr/local/lib/python3.*/ensurepip \
            /usr/local/lib/python3.*/site-packages/pip \
