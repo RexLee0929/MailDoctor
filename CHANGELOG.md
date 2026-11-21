@@ -4,6 +4,24 @@
 
 格式基于 [Keep a Changelog](https://keepachangelog.com/zh-CN/1.1.0/)，版本号遵循 [语义化版本](https://semver.org/lang/zh-CN/)。
 
+## [1.0.1] - 2026-11-21
+
+### 新增
+
+- `--log-file` 参数：输出同时写入指定文件，超过 10 MB 轮转一份（`maildoctor.log` → `maildoctor.log.1`），容器部署不再依赖 Docker 守护进程的 json-file 日志
+
+### 变更
+
+- `docker-compose.yml` 宿主机端口从 `8787` 改为 `8006`（容器内仍监听 8787）
+- 自定义网桥改为显式声明：固定桥名 `br-maildoctor`、固定子网 `172.26.0.0/16` 与 `fd00:dead:beef::/48`，nftables 想按接口名或网段放行时不用猜随机名
+- 容器日志改为挂载 `./logs` 由程序自己落盘，容器自身的 json-file 日志只做兜底，轮转从 `10m × 3` 收紧为 `5m × 2`
+- 宿主机 `./logs` 需要先 `chown 10001:10001`：容器以非 root（uid 10001）运行
+
+### 修复
+
+- `docker-compose.yml` 的 `TZ` 原先写成列表形式，Compose v2 会忽略，现改为标准键值对
+- 删除无效的 `com.docker.network.enable_ipv6` 驱动选项（该选项仅对内置 bridge 生效，自定义网络下不生效），IPv6 改由网络定义里的 `enable_ipv6: true` 开启
+
 ## [1.0.0] - 2026-11-21
 
 ### 新增
@@ -25,4 +43,5 @@
 - DNS 查询无结果时不再回退到系统解析，避免被本机代理的 fake-ip 劫持得出错误结论
 - TLS 探测结果转为纯字典再序列化，修复不可 JSON 序列化的报错
 
+[1.0.1]: releases/v1.0.1.md
 [1.0.0]: releases/v1.0.0.md

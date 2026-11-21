@@ -16,11 +16,11 @@
 ### 镜像运行
 
 ```bash
-docker pull ghcr.io/rexlee0929/maildoctor:1.0.0
-docker run -d --name maildoctor -p 127.0.0.1:8787:8787 ghcr.io/rexlee0929/maildoctor:1.0.0
+docker pull ghcr.io/rexlee0929/maildoctor:1.0.1
+docker run -d --name maildoctor -p 127.0.0.1:8787:8787 ghcr.io/rexlee0929/maildoctor:1.0.1
 ```
 
-打开 `http://127.0.0.1:8787`，填入域名即可。`:latest` 跟踪主分支，`:1.0.0` 这类版本号对应正式发版，也可以用短提交哈希锁定某次构建。镜像只构建 `linux/amd64`；若仓库与镜像设为私有，先执行 `docker login ghcr.io`。要只读根文件系统等更严的运行参数，见下文「部署 → Docker」，或直接用仓库里的 `docker-compose.yml`。
+打开 `http://127.0.0.1:8787`，填入域名即可。`:latest` 跟踪主分支，`:1.0.1` 这类版本号对应正式发版，也可以用短提交哈希锁定某次构建。镜像只构建 `linux/amd64`；若仓库与镜像设为私有，先执行 `docker login ghcr.io`。要只读根文件系统等更严的运行参数，见下文「部署 → Docker」，或直接用仓库里的 `docker-compose.yml`。
 
 ### 源码运行
 
@@ -46,7 +46,7 @@ python run.py --cli example.com --email me@example.com --password '***'   # 加�
 
 ## 30 秒上手
 
-1. 起服务：镜像方式用上面的 `docker run`，或 `docker compose up -d`；源码方式 `python run.py`（Windows 可双击 `start.cmd`）。打开 `http://127.0.0.1:8787`。
+1. 起服务：镜像方式用上面的 `docker run`，或 `docker compose up -d`；源码方式 `python run.py`（Windows 可双击 `start.cmd`）。打开 `http://127.0.0.1:8787`（用仓库里的 compose 起的是 `http://127.0.0.1:8006`）。
 2. 填入自己的域名，按 Enter 或点「开始检查」。
 3. 需要检查 DKIM 时展开「更多选项」，填入 selector。Poste.io 按建域日期生成，形如 `s20240419303`，在后台「DKIM key」一栏可以查到。
 4. 想确认账号密码和认证方式可用，再填测试账号与密码；工具只做登录握手，不发送任何邮件。
@@ -116,6 +116,7 @@ DNS 查询走双通道：优先 DoH（Cloudflare、Google），失败回落到�
 | `--dkim` | 空 | DKIM selector；不填时只按常见名称尝试 |
 | `--email` | `postmaster@<域名>` | 登录实测使用的邮箱地址 |
 | `--password` | 空 | 配合 `--email`；只有填了密码才会执行账号实测 |
+| `--log-file` | 空 | 输出同时写入该文件，超过 10 MB 轮转一份；容器部署用 |
 
 界面上的「更多选项」与 `--mail-host`、`--dkim`、`--email`、`--password` 一一对应。密码只用于本次登录，不写入配置或日志。
 
@@ -139,14 +140,16 @@ docker run -d --name maildoctor \
   -p 127.0.0.1:8787:8787 \
   --read-only --tmpfs /tmp:size=32m \
   --security-opt no-new-privileges --cap-drop ALL \
-  ghcr.io/rexlee0929/maildoctor:1.0.0
+  ghcr.io/rexlee0929/maildoctor:1.0.1
 ```
 
-或者用仓库里的 `docker-compose.yml`，它已经填好镜像名，并配了只绑回环、只读根文件系统、丢掉全部 capability、`/tmp` 挂 tmpfs 和日志轮转：
+或者用仓库里的 `docker-compose.yml`，它已经填好镜像名，并配了只绑回环、只读根文件系统、丢掉全部 capability、`/tmp` 挂 tmpfs 和日志轮转。宿主机端口是 **8006**（容器内仍是 8787），日志由程序自己写到挂载出来的 `./logs`：
 
 ```bash
+mkdir -p logs && sudo chown 10001:10001 logs   # 容器以非 root（uid 10001）运行
 docker compose up -d
-docker compose logs -f      # 看启动日志
+docker compose logs -f      # 启动阶段的容器日志
+tail -f logs/maildoctor.log # 程序日志，超过 10 MB 轮转一份
 ```
 
 镜像基于 `python:3.13-alpine`，只构建 `linux/amd64`，运行时不带 pip 和 setuptools。确实需要改代码时再本地构建：
